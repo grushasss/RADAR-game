@@ -1,0 +1,1 @@
+Hi! this is a simple web game about repelling ddos attacks. I don't mind updates, and I'm a beginner, so feel free to do whatever you want with this project. The main rule is that it should be open-source.
