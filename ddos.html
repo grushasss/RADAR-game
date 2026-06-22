@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-202 // CYBER_WARFARE_CORE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+            z-index: 99;
+            background-size: 100% 4px, 100% 100%;
+            pointer-events: none;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 320px 1fr 350px;
+            grid-template-rows: 90px 1fr 220px;
+            padding: 20px;
+            gap: 15px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.15, 0.85, 0.45, 1);
+        }
+
+        #ui-container.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        #ui-container.active header { animation: slideFromTop 0.6s cubic-bezier(0.15, 0.85, 0.45, 1) forwards; }
+        #ui-container.active .left-panel { animation: slideFromLeft 0.7s cubic-bezier(0.15, 0.85, 0.45, 1) forwards; }
+        #ui-container.active .right-panel { animation: slideFromRight 0.7s cubic-bezier(0.15, 0.85, 0.45, 1) forwards; }
+        #ui-container.active footer { animation: slideFromBottom 0.6s cubic-bezier(0.15, 0.85, 0.45, 1) forwards; }
+
+        @keyframes slideFromTop { 0% { transform: translateY(-40px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        @keyframes slideFromBottom { 0% { transform: translateY(40px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        @keyframes slideFromLeft { 0% { transform: translateX(-50px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+        @keyframes slideFromRight { 0% { transform: translateX(50px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+
+        #ui-container.glitch-sway {
+            animation: ui-drift 0.15s infinite alternate ease-in-out;
+        }
+
+        .term-block {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffffff;
+            padding: 15px;
+            pointer-events: auto;
+            transition: border-color 0.4s ease;
+        }
+
+        header {
+            grid-column: 1 / 4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left { display: flex; flex-direction: column; gap: 5px; }
+        .logo { font-size: 20px; font-weight: bold; letter-spacing: 3px; }
+        
+        .header-right { display: flex; align-items: center; gap: 15px; }
+
+        .score-container {
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            padding: 5px 15px;
+            border: 1px dashed #fff;
+        }
+
+        .menu-btn {
+            background: transparent;
+            border: 1px dashed #ffffff;
+            color: #ffffff;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            width: fit-content;
+        }
+        .menu-btn:hover { background: #ffffff; color: #000000; border-style: solid; }
+
+        .settings-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.15, 0.85, 0.45, 1), backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease;
+        }
+        
+        .settings-overlay.active { 
+            opacity: 1; 
+            pointer-events: auto; 
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .settings-window { 
+            width: 440px; 
+            background: #000000; 
+            border: 3px solid #ffffff; 
+            padding: 25px; 
+            transform: scale(0.85) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.15, 0.85, 0.45, 1);
+        }
+        .settings-overlay.active .settings-window {
+            transform: scale(1) translateY(0);
+        }
+        
+        .settings-title, .menu-logo, .gameover-alert { 
+            font-size: 16px; 
+            font-weight: bold; 
+            border-bottom: 2px solid #ffffff; 
+            padding-bottom: 8px; 
+            margin-bottom: 20px; 
+            overflow: hidden;
+            white-space: nowrap;
+            width: 0;
+        }
+
+        .settings-overlay.active .settings-title,
+        .settings-overlay.active .menu-logo,
+        .settings-overlay.active .gameover-alert {
+            animation: typingEffect 0.6s steps(30, end) 0.15s forwards;
+        }
+
+        @keyframes typingEffect {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        
+        .setting-item { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .setting-item label { font-size: 12px; color: #aaa; text-transform: uppercase; }
+        
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px dashed #444;
+            padding: 10px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+        .shop-item-info { display: flex; flex-direction: column; gap: 4px; }
+        .shop-item-name { font-size: 13px; font-weight: bold; }
+        .shop-item-desc { font-size: 10px; color: #888; }
+        .shop-buy-btn { padding: 6px 12px !important; font-size: 11px !important; }
+
+        .menu-window { text-align: center; background: rgba(0,0,0,0.95); }
+        .menu-logo { font-size: 24px; width: 0; margin: 0 auto 10px auto; border-bottom: none; padding-bottom: 0; }
+        .menu-subtitle { font-size: 10px; color: #666; margin-bottom: 35px; letter-spacing: 2px; opacity: 0; transform: translateY(5px); }
+        
+        .settings-overlay.active .menu-subtitle {
+            animation: fadeInSub 0.4s ease 0.6s forwards;
+        }
+        @keyframes fadeInSub { to { opacity: 1; transform: translateY(0); } }
+
+        .menu-nav { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .menu-nav button { width: 100%; padding: 14px; font-size: 14px; letter-spacing: 2px; }
+
+        #gameover-window { text-align: center; }
+        .gameover-alert { color: #ff0000; font-size: 24px; font-weight: bold; margin-bottom: 15px; letter-spacing: 2px; width: 0; margin: 0 auto 20px auto; }
+
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; background: #222; height: 6px; border: 1px solid #444; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 15px; height: 15px; background: #ffffff; border: 1px solid #000; cursor: pointer;
+        }
+
+        select {
+            background: #000; border: 1px solid #ffffff; color: #ffffff;
+            padding: 8px; font-family: inherit; font-size: 13px; outline: none; cursor: pointer;
+        }
+
+        .checkbox-container { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; }
+        .checkbox-container input { display: none; }
+        .custom-box { width: 16px; height: 16px; border: 2px solid #fff; display: inline-block; position: relative; }
+        .checkbox-container input:checked + .custom-box::after {
+            content: "■"; position: absolute; top: -3px; left: 1px; font-size: 14px; color: #fff;
+        }
+
+        .left-panel { grid-column: 1; grid-row: 2 / 4; display: flex; flex-direction: column; gap: 15px; }
+        .chart-box { flex: 1; display: flex; flex-direction: column; }
+        .chart-title { font-size: 12px; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 3px;}
+        canvas.metric-chart { width: 100%; flex: 1; background: #050505; border: 1px dashed #444; }
+
+        .right-panel { grid-column: 3; grid-row: 2 / 4; display: flex; flex-direction: column; }
+        .log-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #fff; padding-bottom: 5px;}
+        .log-stream { flex: 1; overflow: hidden; font-size: 11px; line-height: 1.4; display: flex; flex-direction: column-reverse; color: #aaa; margin-bottom: 15px; }
+        .log-line { border-bottom: 1px solid #111; padding: 2px 0; white-space: nowrap;}
+        .log-line.crit { color: #ffffff; font-weight: bold; background: #222; }
+        .log-line.dmg-alert { color: #ff3333; font-weight: bold; background: rgba(255,0,0,0.15); }
+
+        footer {
+            grid-column: 2; grid-row: 3;
+            display: flex; flex-direction: column; justify-content: space-between;
+            background: rgba(0,0,0,0.85); border: 2px solid #fff; padding: 15px;
+            pointer-events: auto;
+        }
+        .controls-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .hint-text { font-size: 11px; color: #666; }
+        
+        .hp-bar-container { display: flex; flex-direction: column; gap: 5px; width: 100%; margin-bottom: 5px; }
+        .hp-text { font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; }
+        .hp-track { width: 100%; height: 12px; background: #222; border: 1px solid #fff; position: relative; }
+        .hp-fill { width: 100%; height: 100%; background: #ffffff; transition: width 0.2s ease, background-color 0.4s ease; }
+
+        button {
+            background: #000; border: 2px solid #fff; color: #fff;
+            padding: 12px 24px; font-family: inherit; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; transition: all 0.2s ease;
+        }
+        button:hover:not(:disabled) { background: #fff; color: #000; }
+        
+        button#glitch-btn.active-ult {
+            background: #ff0055; color: #ffffff; border-color: #ff0055;
+            animation: pulse-ult 0.4s infinite alternate;
+        }
+        button:disabled { border-color: #444; color: #444; background: #000; cursor: not-allowed; }
+
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        #camera-nav-overlay {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+        #camera-nav-overlay.active { display: flex; }
+        .nav-row { display: flex; gap: 5px; }
+        .nav-btn {
+            width: 42px; height: 42px;
+            background: rgba(0,0,0,0.85);
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .nav-btn:hover { background: #fff; color: #000; }
+        .nav-btn:active { transform: scale(0.9); }
+
+        @keyframes ui-drift {
+            0% { transform: translate(-4px, -3px) skewX(-1deg); }
+            100% { transform: translate(4px, 3px) skewX(1deg); }
+        }
+        @keyframes pulse-ult {
+            0% { box-shadow: 0 0 5px #ff0055; }
+            100% { box-shadow: 0 0 20px #ff0055; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="settings-overlay active" id="mainmenu-overlay">
+        <div class="settings-window menu-window">
+            <div class="menu-logo" id="menu-main-title">► RADAR_NET // CORE</div>
+            <div class="menu-subtitle">GLOBAL DEFENSE SYSTEM v3.8.2</div>
+            <div class="menu-nav">
+                <button id="menu-start-btn">Запустить Ядро</button>
+                <button id="menu-settings-btn">Настройки системы</button>
+                <button id="menu-info-btn">Инфо о разработчике</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-overlay" id="shop-overlay">
+        <div class="settings-window">
+            <div class="settings-title">// МАГАЗИН ДЕФЕНС-МОДУЛЕЙ</div>
+            
+            <div class="shop-item">
+                <div class="shop-item-info">
+                    <span class="shop-item-name">РЭБ-Турель "Спектр-X" [БАФФ]</span>
+                    <span class="shop-item-desc">Скорострельность: 0.8с. Фокус на опасных целях (Макс: 3)</span>
+                </div>
+                <button class="shop-buy-btn" id="buy-turret-btn">300 PTS</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="shop-item-info">
+                    <span class="shop-item-name">Ремонт оболочки ячеек</span>
+                    <span class="shop-item-desc">Восстанавливает +25% стабильности ядра</span>
+                </div>
+                <button class="shop-buy-btn" id="buy-heal-btn">100 PTS</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="shop-item-info">
+                    <span class="shop-item-name">Модификация Бронирования</span>
+                    <span class="shop-item-desc">Вирусы наносят 3 ед. урона вместо 5</span>
+                </div>
+                <button class="shop-buy-btn" id="buy-armor-btn">200 PTS</button>
+            </div>
+
+            <div class="shop-item">
+                <div class="shop-item-info">
+                    <span class="shop-item-name">Сброс Пакетов Данных</span>
+                    <span class="shop-item-desc">Мгновенно уничтожает 3 случайных угрозы</span>
+                </div>
+                <button class="shop-buy-btn" id="buy-clear-btn">150 PTS</button>
+            </div>
+
+            <div style="text-align: right; margin-top: 25px;">
+                <button id="close-shop-btn" style="padding: 6px 15px; font-size: 12px;">Вернуться в бой</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-overlay" id="info-overlay">
+        <div class="settings-window">
+            <div class="settings-title">// ИДЕНТИФИКАЦИЯ РАЗРАБОТЧИКА</div>
+            <div style="font-size: 12px; line-height: 1.6; color: #aaa; margin-bottom: 25px;">
+                <p style="margin-bottom: 10px;"><b style="color:#fff;">ПРОЕКТ:</b> X-202 "RADAR_NET"</p>
+                <p style="margin-bottom: 10px;"><b style="color:#fff;">ИНЖЕНЕР СЕТИ:</b> Спектр // Подразделение Киберзащиты</p>
+                <p style="margin-bottom: 10px;"><b style="color:#fff;">НАЗНАЧЕНИЕ:</b> Перехват деструктивных пакетов данных на орбите хранения центральной инфраструктуры.</p>
+                <p><b style="color:#fff;">СТАТУС:</b> Сборка стабильна. Защитные алгоритмы откалиброваны под отражение угроз высокой плотности.</p>
+            </div>
+            <div style="text-align: right;">
+                <button id="close-info-btn" style="padding: 6px 15px; font-size: 12px;">Вернуться</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-window">
+            <div class="settings-title">// НАСТРОЙКИ СИСТЕМЫ</div>
+            <div class="setting-item">
+                <label>Стиль интерфейса (Вид)</label>
+                <select id="cfg-theme">
+                    <option value="classic">Квантовый белый (Default)</option>
+                    <option value="cyberpunk">Киберпанк (Неон)</option>
+                    <option value="matrix">Матрица (Цифровой код)</option>
+                    <option value="solar">Солнечная буря (Радар)</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Начальная скорость пакетов</label>
+                <input type="range" id="cfg-speed" min="0.1" max="3" step="0.1" value="1">
+            </div>
+            <div class="setting-item">
+                <label>Яркость линий</label>
+                <input type="range" id="cfg-opacity" min="0.05" max="0.8" step="0.05" value="0.2">
+            </div>
+            <div class="setting-item" style="margin-top: 25px;">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="cfg-mute" checked>
+                    <span class="custom-box"></span>
+                    Включить звуковые импульсы
+                </label>
+            </div>
+            <div class="setting-item">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="cfg-grid" checked>
+                    <span class="custom-box"></span>
+                    Отображать сетку планеты
+                </label>
+            </div>
+            <div style="text-align: right; margin-top: 30px;">
+                <button id="close-settings-btn" style="padding: 6px 15px; font-size: 12px;">Применить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-overlay" id="gameover-overlay">
+        <div class="settings-window" id="gameover-window">
+            <div class="gameover-alert">!! СИСТЕМА СКОМПРОМЕТИРОВАНА !!</div>
+            <div style="font-size: 13px; margin-bottom: 25px; line-height: 1.5;" id="gameover-stats">
+                Ядро центрального сервера отключено перегрузкой.
+            </div>
+            <button id="restart-btn">В Главное Меня</button>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-container">
+        <header class="term-block">
+            <div class="header-left">
+                <div class="logo" id="ui-logo">► RADAR_NET // CORE_DEFENSE</div>
+                <div class="menu-btn" id="open-settings-btn">[ МЕНЮ НАСТРОЕК ]</div>
+            </div>
+            <div class="header-right">
+                <div class="menu-btn" id="open-shop-btn" style="font-weight: bold; border-style: solid; padding: 7px 14px; font-size: 12px;">[ МАГАЗИН ИНФРАСТРУКТУРЫ ]</div>
+                <div class="score-container" id="score-display">SCORE: 0000</div>
+            </div>
+        </header>
+
+        <div class="left-panel">
+            <div class="term-block chart-box">
+                <div class="chart-title">ВХОДЯЩИЙ ПОТОК (GBPS)</div>
+                <canvas id="chart-traffic" class="metric-chart"></canvas>
+            </div>
+            <div class="term-block chart-box">
+                <div class="chart-title">НАГРУЗКА ЯДРА (%)</div>
+                <canvas id="chart-cpu" class="metric-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="term-block right-panel">
+            <div class="log-title">МОНИТОР ЗАЩИТЫ (LIVE_LOG)</div>
+            <div class="log-stream" id="log-stream"></div>
+            
+            <div id="camera-nav-overlay">
+                <div class="nav-row">
+                    <div class="nav-btn" id="cam-up">▲</div>
+                </div>
+                <div class="nav-row">
+                    <div class="nav-btn" id="cam-left">◀</div>
+                    <div class="nav-btn" id="cam-zoom-in" title="Приблизить">+</div>
+                    <div class="nav-btn" id="cam-zoom-out" title="Отдалить">-</div>
+                    <div class="nav-btn" id="cam-right">▶</div>
+                </div>
+                <div class="nav-row">
+                    <div class="nav-btn" id="cam-down">▼</div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="term-block">
+            <div class="hp-bar-container">
+                <div class="hp-text">
+                    <span>ЦЕНТРАЛЬНОЕ ЯДРО СЕРВЕРА [БЕЗОПАСНОСТЬ]</span>
+                    <span id="hp-value">100%</span>
+                </div>
+                <div class="hp-track" id="hp-track"><div class="hp-fill" id="hp-fill"></div></div>
+            </div>
+
+            <div class="controls-row">
+                <div class="hint-text" id="status-text">ЗАПУСК СИСТЕМЫ... НАЖИМАЙТЕ НА СТРУЛКИ ДЛЯ ВРАЩЕНИЯ | КЛИК - ОГОНЬ</div>
+                <button id="glitch-btn">ПЕРЕГРУЗ [250 PTS]</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        const CONFIG = {
+            speedMultiplier: 0.8, 
+            lineOpacity: 0.2,
+            isMuted: false,
+            showGrid: true,
+            theme: 'classic',
+            isGameOver: false,
+            isGameRunning: false
+        };
+
+        let score = 0;
+        let serverHP = 100;
+        let activeCubesLimit = 5; 
+        const MAX_TOTAL_CUBES = 70;
+        
+        // Переменные улучшений магазина
+        let dmgPerPackage = 5; 
+        let isArmorUpgraded = false;
+        let turretsBought = 0;
+        const maxTurrets = 3;
+        const turretsArray = [];
+
+        let prologueTimeLeft = 20; 
+        let isPrologueActive = true;
+        let waveIntervalId = null;
+        let progressionIntervalId = null; 
+        let prologueTimer = null;
+
+        let lastUltActivationTime = 0; 
+        const ULT_COOLDOWN_MS = 25000; 
+        const ULT_LOCK_DURATION_MS = 7000; 
+        let isUltVisualActive = false;
+        let isUltLockActive = false; 
+        const ULT_COST = 250; 
+
+        const cameraState = {
+            radius: 80,       
+            theta: 0,         
+            phi: Math.PI / 4, 
+            minRadius: 45,
+            maxRadius: 140,
+            minPhi: 0.05,     
+            maxPhi: Math.PI - 0.05 
+        };
+
+        const navInput = { up: false, down: false, left: false, right: false, zoomIn: false, zoomOut: false };
+
+        const THEMES = {
+            classic: { lines: 0xffffff, dots: 0xffffff, grid: 0xffffff, server: 0xffffff, uiHex: '#ffffff', blast: 0xffffff, laser: 0xffffff },
+            cyberpunk: { lines: 0xbd00ff, dots: 0x00ffcc, grid: 0x330066, server: 0x00ff66, uiHex: '#00ffcc', blast: 0x00ffcc, laser: 0x00ffcc },
+            matrix: { lines: 0x00ff33, dots: 0x99ff99, grid: 0x003300, server: 0x00ff33, uiHex: '#00ff33', blast: 0x33ff66, laser: 0x00ff33 },
+            solar: { lines: 0xff6600, dots: 0xffcc00, grid: 0x441100, server: 0xff3300, uiHex: '#ff9900', blast: 0xffaa00, laser: 0xffcc00 }
+        };
+
+        const uiContainerEl = document.getElementById('ui-container');
+        const cameraNavOverlay = document.getElementById('camera-nav-overlay');
+        const scoreDisplay = document.getElementById('score-display');
+        const hpFill = document.getElementById('hp-fill');
+        const hpValue = document.getElementById('hp-value');
+        const logStream = document.getElementById('log-stream');
+        const statusText = document.getElementById('status-text');
+
+        const mainMenuOverlay = document.getElementById('mainmenu-overlay');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const shopOverlay = document.getElementById('shop-overlay');
+        const infoOverlay = document.getElementById('info-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+
+        function getRandomSpherePoint(radius) {
+            const u = Math.random(); const v = Math.random();
+            const theta = u * 2.0 * Math.PI; const phi = Math.acos(2.0 * v - 1.0);
+            return new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.innerText = `SCORE: ${String(score).padStart(4, '0')}`;
+        }
+
+        function addScore(points) {
+            if(CONFIG.isGameOver || !CONFIG.isGameRunning) return;
+            score += points;
+            updateScoreDisplay();
+        }
+
+        function updateHpBarVisuals() {
+            hpValue.innerText = `${serverHP}%`;
+            hpFill.style.width = `${serverHP}%`;
+
+            if(serverHP <= 30) {
+                hpFill.style.backgroundColor = '#ff0000';
+            } else if(serverHP <= 60) {
+                hpFill.style.backgroundColor = '#ffaa00';
+            } else {
+                hpFill.style.backgroundColor = THEMES[CONFIG.theme].uiHex;
+            }
+        }
+
+        function damageServer(amount) {
+            if(CONFIG.isGameOver || !CONFIG.isGameRunning) return;
+            serverHP = Math.max(0, serverHP - amount);
+            updateHpBarVisuals();
+
+            if(serverHP <= 0) {
+                triggerGameOver();
+            }
+        }
+
+        function triggerGameOver() {
+            CONFIG.isGameOver = true;
+            CONFIG.isGameRunning = false;
+            clearInterval(waveIntervalId);
+            clearInterval(progressionIntervalId);
+            clearInterval(prologueTimer);
+            document.getElementById('gameover-stats').innerHTML = `Ядро центрального сервера отключено перегрузкой.<br>Ваш итоговый счет: <b>${score}</b> очков.`;
+            gameoverOverlay.classList.add('active');
+            uiContainerEl.classList.remove('active');
+            cameraNavOverlay.classList.remove('active');
+            shopOverlay.classList.remove('active');
+        }
+
+        function startGameCore() {
+            mainMenuOverlay.classList.remove('active');
+            uiContainerEl.classList.add('active');
+            cameraNavOverlay.classList.add('active');
+            
+            // Сброс турелей из прошлого матча
+            turretsArray.forEach(t => serverGroup.remove(t.mesh));
+            turretsArray.length = 0;
+            turretsBought = 0;
+            document.getElementById('buy-turret-btn').disabled = false;
+            document.getElementById('buy-turret-btn').innerText = "300 PTS";
+
+            score = 0;
+            serverHP = 100;
+            dmgPerPackage = 5;
+            isArmorUpgraded = false;
+            document.getElementById('buy-armor-btn').disabled = false;
+            document.getElementById('buy-armor-btn').innerText = "200 PTS";
+
+            CONFIG.speedMultiplier = 0.8; 
+            activeCubesLimit = 5;
+            prologueTimeLeft = 20;
+            isPrologueActive = true;
+            CONFIG.isGameOver = false;
+            CONFIG.isGameRunning = true;
+            lastUltActivationTime = 0;
+            isUltVisualActive = false;
+            isUltLockActive = false;
+            
+            updateScoreDisplay();
+            updateHpBarVisuals();
+            logStream.innerHTML = ""; 
+            statusText.innerText = `[БЕЗОПАСНЫЙ ПРОЛОГ] ОБУЧЕНИЕ... ОСТАЛОСЬ: 20с`;
+
+            cameraState.theta = targetTheta;
+            cameraState.phi = targetPhi - 0.4; 
+            cameraState.radius = 75;
+            updateCameraPosition();
+
+            linesData.forEach((data, index) => {
+                resetLine(data);
+                if (index >= activeCubesLimit) {
+                    data.dot.visible = false;
+                    data.lineObj.visible = false;
+                }
+            });
+
+            prologueTimer = setInterval(() => {
+                if(!CONFIG.isGameRunning) { clearInterval(prologueTimer); return; }
+                prologueTimeLeft--;
+                if (prologueTimeLeft <= 0) {
+                    clearInterval(prologueTimer);
+                    startWaveSystem();
+                } else {
+                    statusText.innerText = `[БЕЗОПАСНЫЙ ПРОЛОГ] ОБУЧЕНИЕ... ОСТАЛОСЬ: ${prologueTimeLeft}с`;
+                }
+            }, 1000);
+
+            applyThemeColors();
+        }
+
+        function startWaveSystem() {
+            isPrologueActive = false;
+            activeCubesLimit = 15; 
+            statusText.innerText = `НАЖИМАЙТЕ НА СТРЕЛКИ ДЛЯ ВРАЩЕНИЯ | КЛИК ПО ЭКРАНУ - ОГОНЬ`;
+            
+            updateVisibleCubes();
+
+            waveIntervalId = setInterval(() => {
+                if(!CONFIG.isGameRunning || activeCubesLimit >= MAX_TOTAL_CUBES) return;
+                activeCubesLimit = Math.min(MAX_TOTAL_CUBES, activeCubesLimit + 4); 
+                updateVisibleCubes();
+                logAndDisplay(`[СИСТЕМА] ПОТОК АТАК РАСШИРЕН // УЗЛОВ: ${activeCubesLimit}`, '#ffaa00');
+            }, 15000);
+
+            progressionIntervalId = setInterval(() => {
+                if(!CONFIG.isGameRunning) return;
+                CONFIG.speedMultiplier *= 1.15; 
+                logAndDisplay(`[ХАРДКОР] СКОРОСТЬ ПАКЕТОВ УВЕЛИЧЕНА НА +15%!`, '#ff3333');
+            }, 20000);
+        }
+
+        function logAndDisplay(text, color) {
+            const line = document.createElement('div');
+            line.className = 'log-line crit';
+            line.style.color = color;
+            line.innerText = text;
+            logStream.insertBefore(line, logStream.firstChild);
+            trimLogs();
+        }
+
+        function updateVisibleCubes() {
+            if (isUltLockActive || !CONFIG.isGameRunning) return;
+
+            let addedInThisCheck = 0;
+            linesData.forEach((data, index) => {
+                if (index < activeCubesLimit && !data.isFalling && !data.dot.visible && addedInThisCheck < 3) {
+                    data.dot.visible = true;
+                    data.lineObj.visible = true;
+                    data.progress = Math.random() * -0.2; 
+                    addedInThisCheck++;
+                }
+            });
+        }
+
+        // --- ИГРОВЫЕ МЕНЮ И СЛУШАТЕЛИ ---
+        document.getElementById('menu-start-btn').addEventListener('click', startGameCore);
+        document.getElementById('menu-settings-btn').addEventListener('click', () => settingsOverlay.classList.add('active'));
+        document.getElementById('menu-info-btn').addEventListener('click', () => infoOverlay.classList.add('active'));
+        document.getElementById('close-info-btn').addEventListener('click', () => infoOverlay.classList.remove('active'));
+        
+        document.getElementById('open-shop-btn').addEventListener('click', () => shopOverlay.classList.add('active'));
+        document.getElementById('close-shop-btn').addEventListener('click', () => shopOverlay.classList.remove('active'));
+
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            gameoverOverlay.classList.remove('active');
+            mainMenuOverlay.classList.add('active');
+        });
+
+        const overlay = document.getElementById('settings-overlay');
+        document.getElementById('open-settings-btn').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.add('active'); });
+        document.getElementById('close-settings-btn').addEventListener('click', (e) => { e.stopPropagation(); overlay.classList.remove('active'); });
+
+        // --- ПОКУПКИ В МАГАЗИНЕ ---
+        document.getElementById('buy-turret-btn').addEventListener('click', (e) => {
+            if (score >= 300 && turretsBought < maxTurrets) {
+                score -= 300;
+                turretsBought++;
+                updateScoreDisplay();
+                playSound('hit');
+
+                // Модель турели
+                const turretGeo = new THREE.CylinderGeometry(0.3, 0.5, 1.4, 5);
+                const turretMat = new THREE.MeshBasicMaterial({ color: THEMES[CONFIG.theme].server, wireframe: true });
+                const turretMesh = new THREE.Mesh(turretGeo, turretMat);
+                
+                const angle = (turretsBought * (Math.PI * 2 / maxTurrets));
+                turretMesh.position.set(Math.cos(angle) * 3.6, 0.7, Math.sin(angle) * 3.6);
+                serverGroup.add(turretMesh);
+
+                turretsArray.push({
+                    mesh: turretMesh,
+                    lastShotTime: Date.now() + Math.random() * 500 // Небольшой разброс старта
+                });
+
+                logAndDisplay(`[МАГАЗИН] РЭБ-ТУРЕЛЬ "СПЕКТР-X" ${turretsBought}/${maxTurrets} ПОДКЛЮЧЕНА`, '#00ffcc');
+
+                if (turretsBought >= maxTurrets) {
+                    e.target.disabled = true;
+                    e.target.innerText = "МАКСИМУМ";
+                }
+            }
+        });
+
+        document.getElementById('buy-heal-btn').addEventListener('click', () => {
+            if (score >= 100) {
+                score -= 100;
+                serverHP = Math.min(100, serverHP + 25);
+                updateScoreDisplay();
+                updateHpBarVisuals();
+                playSound('hit');
+                logAndDisplay(`[МАГАЗИН] ОБОЛОЧКА СЕРВЕРА СТАНДАРТИЗИРОВАНА (+25% СТАБИЛЬНОСТИ)`, '#00ffcc');
+            }
+        });
+
+        document.getElementById('buy-armor-btn').addEventListener('click', (e) => {
+            if (score >= 200 && !isArmorUpgraded) {
+                score -= 200;
+                isArmorUpgraded = true;
+                dmgPerPackage = 3; 
+                updateScoreDisplay();
+                e.target.disabled = true;
+                e.target.innerText = "АКТИВНО";
+                playSound('hit');
+                logAndDisplay(`[МАГАЗИН] БРОНЯ МОДЕРНИЗИРОВАНА // ПОТЕРИ СНИЖЕНЫ ДО 3 ЕД.`, '#00ffcc');
+            }
+        });
+
+        document.getElementById('buy-clear-btn').addEventListener('click', () => {
+            if (score >= 150) {
+                score -= 150;
+                updateScoreDisplay();
+                playSound('ult');
+
+                let clearedCount = 0;
+                linesData.forEach(data => {
+                    if (data.dot.visible && !data.isFalling && clearedCount < 3) {
+                        data.isFalling = true;
+                        data.lineObj.visible = false;
+                        data.dot.material.color.setHex(0xff0055);
+                        const normal = data.dot.position.clone().normalize();
+                        data.fallVelocity = normal.multiplyScalar(4).add(new THREE.Vector3((Math.random() - 0.5) * 6, -12, (Math.random() - 0.5) * 6));
+                        clearedCount++;
+                    }
+                });
+                logAndDisplay(`[МАГАЗИН] ИМПУЛЬС СБРОСИЛ ${clearedCount} ДЕСТРУКТИВНЫХ ПОТОКОВ`, '#00ffcc');
+            }
+        });
+
+        document.getElementById('cfg-speed').addEventListener('input', (e) => CONFIG.speedMultiplier = parseFloat(e.target.value));
+        document.getElementById('cfg-opacity').addEventListener('input', (e) => { CONFIG.lineOpacity = parseFloat(e.target.value); applyThemeColors(); });
+        document.getElementById('cfg-mute').addEventListener('change', (e) => CONFIG.isMuted = !e.target.checked);
+        document.getElementById('cfg-grid').addEventListener('change', (e) => {
+            CONFIG.showGrid = e.target.checked;
+            planetWireframe.visible = CONFIG.showGrid;
+            densePoints.visible = CONFIG.showGrid;
+        });
+        document.getElementById('cfg-theme').addEventListener('change', (e) => { CONFIG.theme = e.target.value; applyThemeColors(); });
+
+        function bindNavBtn(id, key) {
+            const btn = document.getElementById(id);
+            const startAction = (e) => { e.stopPropagation(); e.preventDefault(); navInput[key] = true; };
+            const stopAction = () => navInput[key] = false;
+            
+            btn.addEventListener('mousedown', startAction);
+            btn.addEventListener('mouseup', stopAction);
+            btn.addEventListener('mouseleave', stopAction);
+            
+            btn.addEventListener('touchstart', startAction, {passive: false});
+            btn.addEventListener('touchend', stopAction);
+            btn.addEventListener('touchcancel', stopAction);
+        }
+
+        bindNavBtn('cam-up', 'up');
+        bindNavBtn('cam-down', 'down');
+        bindNavBtn('cam-left', 'left');
+        bindNavBtn('cam-right', 'right');
+        bindNavBtn('cam-zoom-in', 'zoomIn');
+        bindNavBtn('cam-zoom-out', 'zoomOut');
+
+        function applyThemeColors() {
+            const colors = THEMES[CONFIG.theme];
+            planetWireframe.material.color.setHex(colors.grid);
+            densePoints.material.color.setHex(colors.lines);
+            server.material.color.setHex(colors.server);
+
+            if(serverHP > 60) hpFill.style.backgroundColor = colors.uiHex;
+
+            linesData.forEach(data => {
+                data.lineObj.material.color.setHex(colors.lines);
+                data.lineObj.material.opacity = THREE.MathUtils.randFloat(CONFIG.lineOpacity * 0.4, CONFIG.lineOpacity);
+                if(!data.isFalling) {
+                    data.dot.material.color.setHex(colors.dots);
+                    data.dot.material.opacity = 0.9;
+                }
+            });
+
+            turretsArray.forEach(t => t.mesh.material.color.setHex(colors.server));
+
+            document.querySelectorAll('.term-block, .settings-window, #hp-track, .nav-btn, .shop-item').forEach(b => { b.style.borderColor = colors.uiHex; b.style.color = colors.uiHex; });
+            document.querySelectorAll('button, select, .score-container').forEach(btn => { btn.style.borderColor = colors.uiHex; btn.style.color = colors.uiHex; });
+            document.getElementById('ui-logo').style.color = colors.uiHex;
+            document.getElementById('menu-main-title').style.color = colors.uiHex;
+            document.querySelectorAll('.settings-title').forEach(st => st.style.borderColor = colors.uiHex);
+            document.querySelectorAll('.chart-title, .log-title').forEach(t => t.style.borderColor = colors.uiHex);
+        }
+
+        // --- ЗВУКИ НА WEB AUDIO API ---
+        let audioCtx = null;
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        function playSound(type) {
+            if (!audioCtx || CONFIG.isMuted) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            if (type === 'hit') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            } else if (type === 'break') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            } else if (type === 'dmg') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(200, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            } else if (type === 'ult') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            }
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (type === 'ult' ? 0.6 : 0.2));
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + (type === 'ult' ? 0.6 : 0.2));
+        }
+        window.addEventListener('click', initAudio);
+
+        // --- ИНИЦИАЛИЗАЦИЯ THREE.JS СЦЕНЫ ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const worldGroup = new THREE.Group();
+        scene.add(worldGroup);
+
+        const PLANET_RADIUS = 35;
+
+        const planet = new THREE.Mesh(new THREE.SphereGeometry(PLANET_RADIUS, 45, 45), new THREE.MeshBasicMaterial({ color: 0x030303 }));
+        worldGroup.add(planet);
+
+        const planetWireframe = new THREE.Mesh(new THREE.SphereGeometry(PLANET_RADIUS, 45, 45), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.12 }));
+        worldGroup.add(planetWireframe);
+
+        const densePoints = new THREE.Points(new THREE.SphereGeometry(PLANET_RADIUS + 0.2, 70, 70), new THREE.PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.3 }));
+        worldGroup.add(densePoints);
+
+        const targetPhi = Math.PI / 2.7; const targetTheta = Math.PI / 4; 
+        const targetPos = new THREE.Vector3().setFromSphericalCoords(PLANET_RADIUS, targetPhi, targetTheta);
+
+        const serverGroup = new THREE.Group();
+        serverGroup.position.copy(targetPos);
+        serverGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetPos.clone().normalize());
+        worldGroup.add(serverGroup);
+
+        const server = new THREE.Mesh(new THREE.BoxGeometry(3, 9, 3, 2, 4, 2), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
+        server.position.y = 4.5;
+        serverGroup.add(server);
+
+        function updateCameraPosition() {
+            const pos = new THREE.Vector3().setFromSphericalCoords(cameraState.radius, cameraState.phi, cameraState.theta);
+            camera.position.copy(pos);
+            camera.lookAt(0, 0, 0);
+        }
+
+        cameraState.theta = targetTheta;
+        cameraState.phi = targetPhi - 0.4;
+        updateCameraPosition();
+
+        const blastGroup = new THREE.Group();
+        worldGroup.add(blastGroup);
+        const fallingDebris = [];
+        const shotFlashes = []; 
+        const activeHitboxes = []; 
+        const dynamicLasers = []; // Для визуализации лучей турелей
+
+        function createImpactRing(position) {
+            const ringGeo = new THREE.RingGeometry(0.1, 1.5, 16);
+            const ringMat = new THREE.MeshBasicMaterial({ color: THEMES[CONFIG.theme].blast, side: THREE.DoubleSide, transparent: true, opacity: 1 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.copy(position);
+            ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), position.clone().normalize());
+            blastGroup.add(ring);
+
+            const startTime = performance.now();
+            function updateRing() {
+                const elapsed = (performance.now() - startTime) / 500;
+                if (elapsed >= 1) {
+                    blastGroup.remove(ring); ringGeo.dispose(); ringMat.dispose();
+                } else {
+                    const scale = (1 + elapsed * 3.5) * (isUltVisualActive ? 3.0 : 1);
+                    ring.scale.set(scale, scale, 1);
+                    ring.material.opacity = 1 - elapsed;
+                    requestAnimationFrame(updateRing);
+                }
+            }
+            updateRing();
+        }
+
+        function createCubeExplosion(position) {
+            const particleCount = 12;
+            const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const mat = new THREE.MeshBasicMaterial({ color: THEMES[CONFIG.theme].dots, transparent: true });
+            for(let i=0; i<particleCount; i++) {
+                const p = new THREE.Mesh(geo, mat.clone());
+                p.position.copy(position);
+                const velocity = new THREE.Vector3((Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15);
+                worldGroup.add(p);
+                fallingDebris.push({ mesh: p, velocity: velocity, type: 'spark', life: 1.0, decay: THREE.MathUtils.randFloat(1.5, 3.0) });
+            }
+        }
+
+        function createShotFlash(position) {
+            const flashGeo = new THREE.RingGeometry(0.5, 4.0, 4); 
+            const flashMat = new THREE.MeshBasicMaterial({ color: THEMES[CONFIG.theme].uiHex, side: THREE.DoubleSide, transparent: true, opacity: 1.0 });
+            const flash = new THREE.Mesh(flashGeo, flashMat);
+            flash.position.copy(position);
+            flash.lookAt(camera.position);
+            scene.add(flash);
+            shotFlashes.push({ mesh: flash, life: 1.0, speed: 7.0 });
+        }
+
+        // РЕНДЕР ЛАЗЕРНОГО ЛУЧА ТУРЕЛИ
+        function createTurretLaserBeam(fromPos, toPos) {
+            const points = [fromPos, toPos];
+            const laserGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const laserMat = new THREE.LineBasicMaterial({
+                color: THEMES[CONFIG.theme].laser,
+                transparent: true,
+                opacity: 1.0,
+                blending: THREE.AdditiveBlending
+            });
+            const line = new THREE.Line(laserGeo, laserMat);
+            worldGroup.add(line);
+            dynamicLasers.push({ mesh: line, life: 1.0, speed: 6.0 });
+        }
+
+        function rebuildLineGeometry(data) {
+            const startPos = getRandomSpherePoint(PLANET_RADIUS);
+            if(startPos.distanceTo(targetPos) < 15) { 
+                rebuildLineGeometry(data);
+                return;
+            }
+
+            const dist = startPos.distanceTo(targetPos);
+            const midPos = new THREE.Vector3().addVectors(startPos, targetPos).multiplyScalar(0.5);
+            midPos.normalize().multiplyScalar(PLANET_RADIUS + (dist * 0.4) + 5.0);
+
+            const curve = new THREE.QuadraticBezierCurve3(startPos, midPos, targetPos);
+            const points = curve.getPoints(25);
+            
+            data.curve = curve;
+            data.startPos = startPos;
+            data.lineObj.geometry.dispose();
+            data.lineObj.geometry = new THREE.BufferGeometry().setFromPoints(points);
+            data.baseSpeed = THREE.MathUtils.randFloat(0.12, 0.35);
+        }
+
+        const linesData = [];
+
+        for (let i = 0; i < MAX_TOTAL_CUBES; i++) {
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
+            const dummyGeo = new THREE.BufferGeometry();
+            const line = new THREE.Line(dummyGeo, lineMat);
+            worldGroup.add(line);
+
+            const dot = new THREE.Mesh(
+                new THREE.BoxGeometry(1.2, 1.2, 1.2), 
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
+            );
+            worldGroup.add(dot);
+
+            const hitbox = new THREE.Mesh(
+                new THREE.BoxGeometry(4.8, 4.8, 4.8),
+                new THREE.MeshBasicMaterial({ visible: false }) 
+            );
+            dot.add(hitbox); 
+
+            const data = {
+                curve: null, dot: dot, hitbox: hitbox, startPos: null, lineMaterial: lineMat, lineObj: line,
+                progress: 0, baseSpeed: 0, isFalling: false, fallVelocity: null
+            };
+            
+            rebuildLineGeometry(data);
+            data.progress = Math.random() * -0.5;
+
+            hitbox.userData = data; 
+            activeHitboxes.push(hitbox); 
+
+            if (i >= activeCubesLimit) {
+                dot.visible = false;
+                line.visible = false;
+            }
+
+            linesData.push(data);
+        }
+
+        function resetLine(data) {
+            data.isFalling = false; 
+            data.fallVelocity = null;
+            data.dot.scale.set(1, 1, 1);
+            data.dot.material.color.setHex(THEMES[CONFIG.theme].dots);
+            data.dot.material.opacity = 0.9;
+            
+            rebuildLineGeometry(data);
+
+            if (isUltLockActive) {
+                data.dot.visible = false;
+                data.lineObj.visible = false;
+                data.progress = Math.random() * -0.3; 
+                return;
+            }
+
+            data.progress = Math.random() * -0.2; 
+            const idx = linesData.indexOf(data);
+            if (idx < activeCubesLimit && CONFIG.isGameRunning) {
+                data.dot.visible = true;
+                data.lineObj.visible = true;
+            }
+        }
+
+        const raycaster = new THREE.Raycaster(); 
+        const mouse = new THREE.Vector2();
+
+        function fireLaserPointer() {
+            if (!CONFIG.isGameRunning || CONFIG.isGameOver) return;
+
+            raycaster.setFromCamera(mouse, camera);
+            const visibleHitboxes = activeHitboxes.filter(h => h.parent && h.parent.visible && !h.userData.isFalling);
+            visibleHitboxes.forEach(h => h.updateMatrixWorld(true));
+            
+            const intersects = raycaster.intersectObjects(visibleHitboxes, true);
+
+            if (intersects.length > 0) {
+                const targetHitbox = intersects[0].object;
+                destroyTarget(targetHitbox.userData, intersects[0].point, true);
+            } else {
+                const dummyTarget = new THREE.Vector3();
+                raycaster.ray.at(55, dummyTarget);
+                createShotFlash(dummyTarget);
+            }
+        }
+
+        function destroyTarget(data, point, isPlayer = true) {
+            createShotFlash(point);
+            data.isFalling = true;
+            data.lineObj.visible = false;
+            data.dot.material.color.setHex(0xff0000); 
+            
+            const normal = data.dot.position.clone().normalize();
+            data.fallVelocity = normal.multiplyScalar(THREE.MathUtils.randFloat(-2, 5)).add(new THREE.Vector3((Math.random() - 0.5) * 8, -16, (Math.random() - 0.5) * 8));
+
+            playSound('hit');
+            
+            // Баланс: Турель дает +10 очков, игрок +5 очков
+            addScore(isPlayer ? 5 : 10);
+            generateGameLog(true, false, false, 0, isPlayer);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); fireLaserPointer(); }
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.closest('.settings-window') || e.target.id === 'open-settings-btn' || e.target.closest('#camera-nav-overlay') || e.target.id === 'open-shop-btn') return;
+            fireLaserPointer();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('contextmenu', e => e.preventDefault());
+
+        function generateGameLog(isHit = false, isDmg = false, isUlt = false, lockSeconds = 7, isPlayer = true) {
+            if(!CONFIG.isGameRunning) return;
+            const line = document.createElement('div');
+            
+            if (isDmg) {
+                line.className = 'log-line dmg-alert';
+                line.innerText = `[КРИТИЧЕСКИЙ СБОЙ] СЕТЕВОЙ ПАКЕТ ПРОБИЛ ХОСТ // ОГРАНИЧЕНИЕ ЯДРА -${dmgPerPackage}%`;
+            } else if (isHit) {
+                line.className = 'log-line crit'; 
+                line.style.color = THEMES[CONFIG.theme].uiHex;
+                line.innerText = isPlayer ? `[АНТИВИРУС] УЗЕЛ УНИЧТОЖЕН ИГРОКОМ (+5 ОЧКОВ)` : `[ТУРЕЛЬ // АВТО] АВТОПЕРЕХВАТ КРИТ-УГРОЗЫ (+10 ОЧКОВ)`;
+            } else if (isUlt) {
+                line.className = 'log-line crit';
+                line.style.color = '#ff0055';
+                line.innerText = `[ЯДРО // КАТАСТРОФА] МАССОВЫЙ ПЕРЕГРУЗ РАЗВЕРНУТ (-250 PTS). ВСЕ ВИРУСНЫЕ ПОТОКИ ЗАБЛОКИРОВАНЫ!`;
+            } else if (lockSeconds > 0) {
+                line.className = 'log-line crit';
+                line.style.color = '#00ffcc';
+                line.innerText = `[БЕЗОПАСНОСТЬ] БЛОКИРОВКА СПАВНА АКТИВНА // ОСТАЛОСЬ ${lockSeconds}с`;
+            }
+            
+            logStream.insertBefore(line, logStream.firstChild);
+            trimLogs();
+        }
+
+        function trimLogs() {
+            while (logStream.children.length > 18) logStream.removeChild(logStream.lastChild);
+        }
+
+        function createChartHandler(canvasId) {
+            const canvas = document.getElementById(canvasId); const ctx = canvas.getContext('2d');
+            let dataPoints = new Array(40).fill(0);
+            function draw(newValue) {
+                for(let i=0; i<dataPoints.length-1; i++) dataPoints[i] = dataPoints[i+1];
+                dataPoints[dataPoints.length-1] = newValue;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = '#111111';
+                for(let g = 0; g < canvas.width; g += 20) {
+                    ctx.beginPath(); ctx.moveTo(g, 0); ctx.lineTo(g, canvas.height); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, g); ctx.lineTo(canvas.width, g); ctx.stroke();
+                }
+                ctx.strokeStyle = THEMES[CONFIG.theme].uiHex; ctx.lineWidth = 2; ctx.beginPath();
+                const step = canvas.width / (dataPoints.length - 1);
+                for(let i=0; i<dataPoints.length; i++) {
+                    const x = i * step; const y = canvas.height - (dataPoints[i] / 100) * canvas.height;
+                    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            function resize() { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+            window.addEventListener('resize', resize); resize(); return { draw };
+        }
+        const trafficChart = createChartHandler('chart-traffic'); const cpuChart = createChartHandler('chart-cpu');
+        
+        setInterval(() => {
+            if(!CONFIG.isGameRunning) { trafficChart.draw(0); cpuChart.draw(0); return; }
+            if (isUltVisualActive) {
+                trafficChart.draw(95 + THREE.MathUtils.randFloat(-5, 5));
+                cpuChart.draw(98 + THREE.MathUtils.randFloat(-2, 2));
+            } else if (isUltLockActive) {
+                trafficChart.draw(2 + THREE.MathUtils.randFloat(0, 2));
+                cpuChart.draw(5 + THREE.MathUtils.randFloat(0, 2));
+            } else {
+                trafficChart.draw(20 + (activeCubesLimit * 0.8) + THREE.MathUtils.randFloat(-3, 3));
+                cpuChart.draw(15 + (activeCubesLimit * 0.5) + THREE.MathUtils.randFloat(-1, 1));
+            }
+        }, 200);
+
+        // --- УЛЬТИМЕЙТ ---
+        const ultBtn = document.getElementById('glitch-btn');
+
+        ultBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); 
+            const currentTime = Date.now();
+            if(!CONFIG.isGameRunning || CONFIG.isGameOver || score < ULT_COST || currentTime - lastUltActivationTime < ULT_COOLDOWN_MS) return;
+
+            score -= ULT_COST; 
+            updateScoreDisplay();
+
+            lastUltActivationTime = currentTime;
+            isUltVisualActive = true;
+            isUltLockActive = true; 
+            
+            ultBtn.classList.add('active-ult');
+            uiContainerEl.classList.add('glitch-sway');
+            playSound('ult');
+            generateGameLog(false, false, true);
+
+            linesData.forEach(data => {
+                if (data.dot.visible && !data.isFalling) {
+                    data.isFalling = true;
+                    data.lineObj.visible = false;
+                    data.dot.material.color.setHex(0xff0055);
+                    const normal = data.dot.position.clone().normalize();
+                    data.fallVelocity = normal.multiplyScalar(THREE.MathUtils.randFloat(3, 8)).add(new THREE.Vector3((Math.random() - 0.5) * 12, -10, (Math.random() - 0.5) * 12));
+                    addScore(5);
+                }
+            });
+
+            let lockCountdown = 7;
+            const lockInterval = setInterval(() => {
+                if (!CONFIG.isGameRunning) { clearInterval(lockInterval); return; }
+                lockCountdown--;
+                if (lockCountdown > 0) {
+                    generateGameLog(false, false, false, lockCountdown);
+                } else {
+                    clearInterval(lockInterval);
+                    isUltLockActive = false; 
+                    updateVisibleCubes(); 
+                }
+            }, 1000);
+
+            setTimeout(() => {
+                isUltVisualActive = false;
+                uiContainerEl.classList.remove('glitch-sway');
+                ultBtn.classList.remove('active-ult');
+                planetWireframe.scale.set(1, 1, 1); 
+                densePoints.scale.set(1, 1, 1);
+            }, 800);
+        });
+
+        // Блокировка кнопок по балансу PTS
+        setInterval(() => {
+            if (!CONFIG.isGameRunning) return; 
+            const timePassed = Date.now() - lastUltActivationTime;
+            
+            if (score < ULT_COST && !isUltLockActive) {
+                ultBtn.disabled = true;
+                ultBtn.innerText = `НУЖНО: ${ULT_COST} PTS`;
+            } else if (isUltLockActive) {
+                ultBtn.disabled = true;
+                const currentSecLeft = Math.ceil((ULT_LOCK_DURATION_MS - timePassed) / 1000);
+                ultBtn.innerText = `ЩИТ АКТИВЕН: ${Math.max(0, currentSecLeft)}С`;
+            } else if (timePassed < ULT_COOLDOWN_MS) {
+                ultBtn.disabled = true; 
+                const secondsLeft = Math.ceil((ULT_COOLDOWN_MS - timePassed) / 1000);
+                ultBtn.innerText = `ПЕРЕГРУЗКА: ${secondsLeft}С`;
+            } else {
+                ultBtn.disabled = false; 
+                ultBtn.innerText = `ПЕРЕГРУЗ [${ULT_COST} PTS]`;
+            }
+
+            document.getElementById('buy-heal-btn').disabled = (score < 100);
+            if (!isArmorUpgraded) document.getElementById('buy-armor-btn').disabled = (score < 200);
+            document.getElementById('buy-clear-btn').disabled = (score < 150);
+            if (turretsBought < maxTurrets) document.getElementById('buy-turret-btn').disabled = (score < 300);
+        }, 100);
+
+        // --- УМНЫЙ АВТО-ОБСТРЕЛ ТУРЕЛИ (КУЛДАУН СНИЖЕН С 3с ДО 0.8с) ---
+        setInterval(() => {
+            if (!CONFIG.isGameRunning || CONFIG.isGameOver || turretsArray.length === 0 || isUltLockActive) return;
+
+            const now = Date.now();
+            turretsArray.forEach(turret => {
+                if (now - turret.lastShotTime >= 800) { // 800мс кулдаун
+                    let bestTarget = null;
+                    let maxProgress = -1; 
+
+                    // Поиск вирусного пакета, который пролетел БЛИЖЕ ВСЕГО к ядру сервера
+                    linesData.forEach(data => {
+                        if (data.dot.visible && !data.isFalling && data.progress > maxProgress && data.progress > 0) {
+                            maxProgress = data.progress;
+                            bestTarget = data;
+                        }
+                    });
+
+                    if (bestTarget) {
+                        turret.lastShotTime = now;
+                        
+                        // Получаем мировую позицию дула турели
+                        const turretWorldPos = new THREE.Vector3();
+                        turret.mesh.getWorldPosition(turretWorldPos);
+                        
+                        // Рисуем видимый лазерный луч от турели к вирусу
+                        createTurretLaserBeam(turretWorldPos, bestTarget.dot.position.clone());
+                        
+                        // Взрываем цель
+                        destroyTarget(bestTarget, bestTarget.dot.position, false);
+                    }
+                }
+            });
+        }, 50);
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            const camSpeed = 1.8 * delta; 
+            const zoomSpeed = 45 * delta;  
+
+            if (navInput.left)  cameraState.theta -= camSpeed;
+            if (navInput.right) cameraState.theta += camSpeed;
+            if (navInput.up)    cameraState.phi = Math.max(cameraState.minPhi, cameraState.phi - camSpeed);
+            if (navInput.down)  cameraState.phi = Math.min(cameraState.maxPhi, cameraState.phi + camSpeed);
+            if (navInput.zoomIn)  cameraState.radius = Math.max(cameraState.minRadius, cameraState.radius - zoomSpeed);
+            if (navInput.zoomOut) cameraState.radius = Math.min(cameraState.maxRadius, cameraState.radius + zoomSpeed);
+
+            if (CONFIG.isGameRunning) updateCameraPosition();
+            
+            if (isUltVisualActive) {
+                worldGroup.rotation.y += 0.15 * delta; 
+                const wave = Math.sin(performance.now() * 0.05) * 0.08;
+                planetWireframe.scale.set(1 + wave, 1 + wave, 1 + wave);
+                densePoints.scale.set(1 - wave, 1 - wave, 1 - wave);
+            } else {
+                worldGroup.rotation.y += 0.005 * delta; 
+            }
+
+            if (!CONFIG.isGameRunning) {
+                cameraState.theta += 0.03 * delta;
+                updateCameraPosition();
+                renderer.render(scene, camera);
+                return;
+            }
+
+            let currentSpeedModifier = CONFIG.speedMultiplier;
+            if (isPrologueActive) currentSpeedModifier *= 0.5;
+
+            linesData.forEach(data => {
+                if (!data.dot.visible && data.progress < 0) { data.progress += 0.1 * delta; return; }
+                if (!data.dot.visible) return;
+
+                if (!data.isFalling) {
+                    data.progress += (data.baseSpeed * currentSpeedModifier) * delta;
+                    if (data.progress > 1) {
+                        data.progress = 0;
+                        createImpactRing(data.startPos);
+                        playSound('dmg'); 
+                        damageServer(dmgPerPackage); 
+                        generateGameLog(false, true); 
+                        server.scale.set(1.4, 0.7, 1.4); 
+                    }
+                    const newPos = data.curve.getPointAt(Math.max(0, data.progress));
+                    if(newPos.length() < PLANET_RADIUS + 0.8 && data.progress < 0.95) {
+                        newPos.normalize().multiplyScalar(PLANET_RADIUS + 0.8);
+                    }
+                    data.dot.position.copy(newPos);
+                } else {
+                    data.dot.position.addScaledVector(data.fallVelocity, delta);
+                    data.dot.rotation.x += 4.0 * delta; data.dot.rotation.y += 2.0 * delta;
+                    data.dot.scale.multiplyScalar(1 - 0.5 * delta);
+
+                    if (data.dot.position.length() <= PLANET_RADIUS + 0.5 || data.dot.scale.x < 0.1) {
+                        playSound('break');
+                        createCubeExplosion(data.dot.position);
+                        resetLine(data); 
+                    }
+                }
+            });
+
+            // Обновление и затухание лазерных лучей турелей
+            for (let i = dynamicLasers.length - 1; i >= 0; i--) {
+                const laser = dynamicLasers[i];
+                laser.life -= laser.speed * delta;
+                laser.mesh.material.opacity = laser.life;
+                if (laser.life <= 0) {
+                    worldGroup.remove(laser.mesh);
+                    laser.mesh.geometry.dispose();
+                    laser.mesh.material.dispose();
+                    dynamicLasers.splice(i, 1);
+                }
+            }
+
+            for (let i = shotFlashes.length - 1; i >= 0; i--) {
+                const flash = shotFlashes[i];
+                flash.life -= flash.speed * delta;
+                flash.mesh.scale.set(1 + (1 - flash.life) * 1.5, 1 + (1 - flash.life) * 1.5, 1);
+                flash.mesh.material.opacity = flash.life;
+                if(flash.life <= 0) { scene.remove(flash.mesh); flash.mesh.geometry.dispose(); flash.mesh.material.dispose(); shotFlashes.splice(i, 1); }
+            }
+
+            for (let i = fallingDebris.length - 1; i >= 0; i--) {
+                const debris = fallingDebris[i];
+                debris.mesh.position.addScaledVector(debris.velocity, delta);
+                debris.life -= debris.decay * delta; debris.mesh.material.opacity = debris.life;
+                if (debris.life <= 0) { worldGroup.remove(debris.mesh); debris.mesh.geometry.dispose(); debris.mesh.material.dispose(); fallingDebris.splice(i, 1); }
+            }
+
+            server.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+
+            if (isUltVisualActive) {
+                camera.position.x += Math.sin(performance.now() * 0.5) * 0.4;
+                camera.position.y += Math.cos(performance.now() * 0.5) * 0.4;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        applyThemeColors();
+        animate();
+    </script>
+</body>
+</html>
